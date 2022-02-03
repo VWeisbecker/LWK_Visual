@@ -1,7 +1,7 @@
 ---
-title: "Letter-winged Kite neuromorphology"
-author: "Aubrey Keirnan, Vera Weisbecker and Andrew Iwaniuk"
-date: "August 17th, 2020"
+title: "Analysis and figure code replicating with neurocranial length, for supplementary materials of Not like night and day: the nocturnal Letter-winged Kite does not differ from diurnal congeners in orbit or endocast morphology"
+author: "Vera Weisbecker, Jeroen Smaers,Aubrey Keirnan, and Andrew Iwaniuk"
+date: "February 3rd, 2022"
 output: html_document
 ---
 
