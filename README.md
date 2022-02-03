@@ -23,7 +23,7 @@ The paper to accompany this analysis is currently in review.
 
 * [LWK_data_frames.Rmd](/Analyses/LWK_data_frames.Rmd) Loads measurements, computes left-right means and species averages, matches phylogeny with data, and saves the .rda file for analyses.
 * [LWK_analysis.Rmd](/Analyses/LWK_analysis.Rmd) Computes all results, including table outputs and figures.
-* [LWK_analysis_Neurocr](/Analyses/LWK_analysis_Neurocr.RMD) Replicates analyses, using neurocranial length instead of geometric mean
+* [LWK_analysis_Neurocr](/Analyses/LWK_analysis_Neurocr.Rmd) Replicates analyses, using neurocranial length instead of geometric mean
 
 ## Figures
 
