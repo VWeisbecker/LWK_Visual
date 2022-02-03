@@ -1,0 +1,5 @@
+"","Dep","Pred","t","p","model_res_norm[c(1:nrow(PGLS_results_hinge)), 2]"
+"1","log Orb. Diam.","log Occ. Hinge","9.534","0","0.75"
+"2","log Opt. For.","log Occ. Hinge","6.985","0","0.009"
+"3","log Opt. L. Surf","log Occ. Hinge","5.927","0","0.762"
+"4","log Endoc. surf.","log Occ. Hinge","13.259","0","0.656"

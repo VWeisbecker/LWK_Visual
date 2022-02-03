@@ -1,7 +1,7 @@
 ---
-title: "Code for: Not like night and day: the nocturnal Letter-winged Kite does not differ from diurnal congeners in orbit or endocast morphology"
+title: "Analysis and figure code for for: Not like night and day: the nocturnal Letter-winged Kite does not differ from diurnal congeners in orbit or endocast morphology"
 author: "Vera Weisbecker, Jeroen Smaers,Aubrey Keirnan, and Andrew Iwaniuk"
-date: "August 17th, 2020"
+date: "February 3rd, 2022"
 output: html_document
 ---
 
