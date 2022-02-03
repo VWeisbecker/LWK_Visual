@@ -1,0 +1,45 @@
+#NEXUS
+[R-package APE, Wed Jun 30 17:14:22 2021]
+
+BEGIN TAXA;
+	DIMENSIONS NTAX = 16;
+	TAXLABELS
+		Falco_cenchroides
+		Falco_longipennis
+		Falco_subniger
+		Aviceda_subcristata
+		Accipiter_fasciatus
+		Circus_assimilis
+		Accipiter_novaehollandiae
+		Accipiter_cirrocephalus
+		Haliastur_sphenurus
+		Haliastur_indus
+		Milvus_migrans
+		Hieraaetus_morphnoides
+		Elanus_axillaris
+		Elanus_caeruleus
+		Elanus_scriptus
+		Pandion_haliaetus
+	;
+END;
+BEGIN TREES;
+	TRANSLATE
+		1	Falco_cenchroides,
+		2	Falco_longipennis,
+		3	Falco_subniger,
+		4	Aviceda_subcristata,
+		5	Accipiter_fasciatus,
+		6	Circus_assimilis,
+		7	Accipiter_novaehollandiae,
+		8	Accipiter_cirrocephalus,
+		9	Haliastur_sphenurus,
+		10	Haliastur_indus,
+		11	Milvus_migrans,
+		12	Hieraaetus_morphnoides,
+		13	Elanus_axillaris,
+		14	Elanus_caeruleus,
+		15	Elanus_scriptus,
+		16	Pandion_haliaetus
+	;
+	TREE * UNTITLED = [&R] ((((((((5,6,7),8),((9,10),11)),12),4),(13,14,15)),16),((2,3),1));
+END;

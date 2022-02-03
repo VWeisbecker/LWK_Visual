@@ -1,0 +1,530 @@
+---
+title: "Letter-winged Kite neuromorphology"
+author: "Aubrey Keirnan, Vera Weisbecker and Andrew Iwaniuk"
+date: "August 17th, 2020"
+output: html_document
+---
+
+# load libraries required
+```{r}
+
+library(ape)         # CRAN v5.5 
+library(nlme)        # CRAN v3.1-153
+library(geiger)      # CRAN v2.0.7
+library(rstudioapi)  # CRAN v0.13
+library(devtools)    # CRAN v2.4.3
+library(phytools)    # CRAN v0.7-90
+library(phylolm)     # CRAN v2.6.2
+library(performance) # CRAN v0.8.0
+
+#Note that for my installations, I have to specify the path to the library on C:/
+
+#install_github("JeroenSmaers/evomap", lib = "C:/Program Files/R/R-4.0.4/library" )
+#install_github("khabbazian/l1ou", lib = "C:/Program Files/R/R-4.0.4/library" )
+
+library(l1ou)        # [github::khabbazian/l1ou] v1.42
+library (evomap)    #0.0.0.9000
+
+
+
+#this sets the working directory to the home path, which doesn't happen on everyone's computers
+setwd(dirname(getActiveDocumentContext()$path))
+
+load(file = "../Data/Processed/LWK_data_processed.rda")
+
+```
+
+#prepare analyses that ask if Elanus is different - phylo ANOVA and prediction intervals
+
+```{r}
+
+
+#Pick out the right species, check
+
+tree<-consensus_tree
+plot(tree,label.offset = 0.25); tiplabels()
+All<-1:length(tree$tip.label)
+Elanus<-getTips(tree,findMRCA(tree,c("Elanus_axillaris","Elanus_scriptus", "Elanus_caeruleus")))
+
+grpI_01<-rep("XXX",length(rownames(data)))
+    grpI_01[All]<-"1"
+    grpI_01[Elanus]<-"2"
+    grpI_01<-as.factor(grpI_01); names(grpI_01)<-rownames(data)
+    summary(grpI_01); length(grpI_01); length(names(summary(grpI_01)))
+    tree$tip.label[which(grpI_01=="XXX")]
+        tipCol<-rep("black",length(tree$tip.label))
+        tipCol[which(grpI_01=="1")]<-"red"
+        tipCol[which(grpI_01=="2")]<-"darkgreen"
+        #Check taht the right species were chosen
+        plot(tree,tip.color = tipCol)
+    
+dataTemp<-pruneSample(Av_data,tree,setdiff(All,Elanus))$dataPruned
+treeTemp<-pruneSample(Av_data,tree,setdiff(All,Elanus))$treePruned
+
+name.check(treeTemp,dataTemp)
+
+```
+
+#PGLS models and Evomap confidence/prediction intervals. The CI and PI code is later used for making plot lines. All data are logged because the expectation is that they evolve to scale exponentially.
+
+#NOTE here and in figure it has to be endocast SA minus optic lobe SA
+
+```{r}
+
+
+
+#Orbit to Occ_Hinge_mm
+#The below also computing PIs (depends on prep code above) because we can expect the Elanus to be different
+lm_orbD <- lm(log (orbD) ~ log (Occ_Hinge_mm),  data = Av_data)
+
+perf_orbD <- check_model(lm_orbD)
+
+gls_orbD <- gls( log (orbD) ~ log (Occ_Hinge_mm), correlation = corBrownian(1,consensus_tree, form = ~Species), data = Av_data)
+summary(gls_orbD)
+#Evomap confidence intervals.  PI code needs emphasizing that the continuous variables are numeric!
+OrbD_gm_CI <- gls.ci(log (Av_data$orbD), log (Av_data$Occ_Hinge_mm),vcv(consensus_tree))
+OrbD_gm_PI <- gls.pi(log (as.numeric(dataTemp$orbD)), log (as.numeric(dataTemp$Occ_Hinge_mm)), vcv(treeTemp),3)
+        
+
+
+#Optic Foramen to Occ_Hinge_mm
+
+lm_optF <- lm(log(optF) ~  log(Occ_Hinge_mm), data = Av_data )
+
+perf_optF <- check_model(lm_optF)
+
+gls_optF <- gls( log(optF) ~  log(Occ_Hinge_mm), correlation = corBrownian(1,consensus_tree, form = ~Species), data = Av_data)
+summary(gls_optF)
+#Evomap confidence intervals
+OptF_gm_CI <- gls.ci(log (Av_data$optF), log (Av_data$Occ_Hinge_mm),vcv(consensus_tree))
+OptF_gm_PI <- gls.pi(log (as.numeric(dataTemp$optF)), log (as.numeric(dataTemp$Occ_Hinge_mm)), vcv(treeTemp),3)
+
+
+#Optic Foramen to Orbit. 
+
+lm_optF_orbD <- lm( log (optF) ~ log (orbD), data = Av_data)
+
+perf_optF_orbD <- check_model(lm_optF_orbD)
+
+gls_optF_orbD <- gls( log (optF) ~ log (orbD), correlation = corBrownian(1,consensus_tree, form = ~Species), data = Av_data)
+summary(gls_optF_orbD)
+#Evomap confidence intervals
+OptF_OrbD_gm_CI <- gls.ci(log (Av_data$optF), log (Av_data$orbD),vcv(consensus_tree))
+OptF_OrbD_gm_PI <- gls.pi(log (as.numeric(dataTemp$optF)), log (as.numeric(dataTemp$orbD)), vcv(treeTemp),3)
+
+
+
+
+
+#Surface areas . This is using confidence intervals because from the scatterplot we have no reason to assume that Elanus is different.
+
+#First, doing the linear model underlying the gls to see if the model meets conditions of linearity, homogeneity of variance, outliers, residual normality using the performance package
+
+lm_optLSA <- lm(log(optLSA) ~ log(Occ_Hinge_mm),data = Av_data)
+
+perf_optLSA <- check_model(lm_optLSA)
+
+#Then running gls
+
+gls_optLSA <- gls(  log(optLSA) ~ log(Occ_Hinge_mm), correlation = corBrownian(1,consensus_tree, form= ~Species), data = Av_data)
+summary(gls_optLSA)
+
+#Evomap confidence intervals
+OptLSA_gm_CI <- gls.ci(log(Av_data$optLSA), log(Av_data$Occ_Hinge_mm),vcv(consensus_tree))
+
+
+
+
+#Endocast to Geometric mean
+
+lm_EndoLSA <- lm( log(BrSA_mmsquared) ~ log(Occ_Hinge_mm), data = Av_data)
+
+perf_EndoLSA <- check_model(lm_optLSA)
+
+gls_EndoLSA <- gls(  log(BrSA_mmsquared) ~ log(Occ_Hinge_mm), correlation = corBrownian(1,consensus_tree, form= ~Species), data = Av_data)
+summary(gls_EndoLSA)
+
+#Evomap confidence intervals
+EndoLSA_gm_CI <- gls.ci(log(Av_data$BrSA_mmsquared) , log(Av_data$Occ_Hinge_mm),vcv(consensus_tree))
+
+
+
+#Optic Lobes to Endocast
+
+lm_optLSA_endo <- lm ( log(optLSA) ~ log( BrSA_mmsquared - optLSA), data = Av_data)
+
+perf_optLSA_endo <- check_model(lm_optLSA_endo)
+
+gls_optLSA_endo <- gls( log(optLSA) ~ log( BrSA_mmsquared - optLSA), correlation = corBrownian(1,consensus_tree, form=~Species), data = Av_data)
+summary(gls_optLSA_endo)
+
+#Evomap confidence intervals
+OptLSA_Endo_gm_CI <- gls.ci( log(Av_data$optLSA),  log(Av_data$BrSA_mmsquared-Av_data$optLSA),vcv(consensus_tree))
+
+
+
+
+#subtracting Wulst from endo surface area here but it makes zero difference.
+
+
+lm_Wulst_Endo <- lm(log(Wulst_mmsquared) ~ log(BrSA_mmsquared-Wulst_mmsquared),data = Av_data)
+
+perf_Wulst_Endo <- check_model(lm_Wulst_Endo)
+
+
+gls_Wulst_Endo <- gls( log(Wulst_mmsquared) ~ log(BrSA_mmsquared-Wulst_mmsquared), correlation = corBrownian(1,consensus_tree, form = ~Species), data = Av_data)
+summary(gls_Wulst_Endo)
+#Evomap confidence intervals
+Wulst_Endo_CI <- gls.ci(log(Av_data$Wulst_mmsquared),log( Av_data$BrSA_mmsquared-Av_data$Wulst_mmsquared),vcv(consensus_tree))
+
+
+
+
+```
+
+
+
+
+#PGLS results table. Sooo clunkily coded but easier than manually typing in. rbind allows easy addition and swapping (as opposed to hard-coding row numbers).
+```{r}
+
+#Set up a table with the relevant column names
+
+PGLS_results_hinge <- data.frame("Dep" = integer(0), "Pred"= integer(0), "t"= integer(0), "p"= integer(0))
+
+#Start it off with row 1 
+
+PGLS_results_hinge [1,] <-   c( "log Orb. Diam.", "log Occ. Hinge", round (summary(gls_orbD)$tTable[2,3:4],3))
+
+
+PGLS_results_hinge  <-  rbind(PGLS_results_hinge, c( "log Opt. For.", "log Occ. Hinge",  round (summary(gls_optF)$tTable[2,3:4],3)))
+
+
+PGLS_results_hinge <- rbind(PGLS_results_hinge, c("log Opt. L. Surf", "log Occ. Hinge", round(summary(gls_optLSA)$tTable[2,3:4],3)))
+
+
+
+PGLS_results_hinge <-rbind (PGLS_results_hinge, c("log Endoc. surf.", "log Occ. Hinge", round (summary(gls_EndoLSA)$tTable[2,3:4],3)))
+
+
+
+#The csv for these is written below with all the normality tests
+
+
+
+```
+
+
+
+#pANCOVAS - code by Jeroen Smaers
+
+#Do Elanines have larger orbits, smaller Optic foramina for their size; and do they have smaller optic foramina relative to orbit size?
+#This code comparesa  model where there is no intercept difference between Elanines with a model where there is one, but the slope is assumed to be the same. Significant p-values mean that the model where Elanines have a different intercept is significantly better.
+
+```{r}
+
+
+#Orbit diameter vs.  Occ. Hinge
+
+Y<-"orbD"; X<-"Occ_Hinge_mm";
+
+#Note, data logged here
+data<-log(na.omit(Av_data[,c(which(colnames(Av_data)==paste(Y)),which(colnames(Av_data)==paste(X))),drop=F]))
+
+colnames(data)<-c("Dependent","Independent")
+
+Model<-model.matrix(as.formula(Dependent~Independent),data)
+Model_01_I<-model.matrix(as.formula(Dependent~grpI_01 + Independent),data)
+
+#model is ok
+
+lm_orbD_Occ_Hinge_mm_Elanus <- lm(Dependent~grpI_01 + Independent,data)
+
+
+perf_OrbD_Occ_Hinge_mm_Elanus <- check_model(lm_orbD_Occ_Hinge_mm_Elanus )
+
+
+Sigma<-vcv(tree)
+OrbD_Occ_Hinge_mm_pANOVA <- gls.ancova(Dependent~Independent,Sigma,Model,Model_01_I)
+
+
+#Optic foramen diameter vs geom mean
+
+Y<-"optF"; X<-"Occ_Hinge_mm";
+
+data<-log(na.omit(Av_data[,c(which(colnames(Av_data)==paste(Y)),which(colnames(Av_data)==paste(X))),drop=F]))
+
+colnames(data)<-c("Dependent","Independent")
+
+Model<-model.matrix(as.formula(Dependent~Independent),data)
+Model_optFGM_I<-model.matrix(as.formula(Dependent~grpI_01 + Independent),data)
+
+lm__optF_Occ_Hinge_mm_Elanus <- lm(Dependent~grpI_01 + Independent,data)
+
+perf_optF_Occ_Hinge_mm_Elanus <- check_model(lm__optF_Occ_Hinge_mm_Elanus )
+
+
+Sigma<-vcv(tree)
+OptF_Occ_Hinge_mm_pANOVA <- gls.ancova(Dependent~Independent,Sigma,Model,Model_01_I)
+
+
+#For CIRCUS optic lobe
+
+#Pick out the right species, check
+
+tree<-consensus_tree
+plot(tree,label.offset = 0.25); tiplabels()
+All<-1:length(tree$tip.label)
+Circus <- 4
+
+grpI_01<-rep("XXX",length(rownames(data)))
+    grpI_01[All]<-"1"
+    grpI_01[Circus]<-"2"
+    grpI_01<-as.factor(grpI_01); names(grpI_01)<-rownames(data)
+    summary(grpI_01); length(grpI_01); length(names(summary(grpI_01)))
+    tree$tip.label[which(grpI_01=="XXX")]
+        tipCol<-rep("black",length(tree$tip.label))
+        tipCol[which(grpI_01=="1")]<-"red"
+        tipCol[which(grpI_01=="2")]<-"darkgreen"
+        plot(tree,tip.color = tipCol)
+    
+#Optic lobe vs geomean
+
+Y<-"optLSA"; X<-"Occ_Hinge_mm";
+
+data<-log(na.omit(Av_data[,c(which(colnames(Av_data)==paste(Y)),which(colnames(Av_data)==paste(X))),drop=F]))
+
+colnames(data)<-c("Dependent","Independent")
+
+lm_optLSA_Occ_hinge_Circus <- lm(Dependent~grpI_01 + Independent,data)
+perf_optLSA_Occ_hinge_Circus <- check_model(lm_optLSA_geomean_Circus)
+
+Model<-model.matrix(as.formula(Dependent~Independent),data)
+Model_01_I<-model.matrix(as.formula(Dependent~grpI_01 + Independent),data)
+
+Sigma<-vcv(tree)
+OptL_Occ_Hinge_mm_pANOVA_Circus <- gls.ancova(Dependent~Independent,Sigma,Model,Model_01_I)
+
+pANOVA_summary <- rbind(OrbD_Occ_Hinge_mm_pANOVA, OptF_Occ_Hinge_mm_pANOVA,OptL_Occ_Hinge_mm_pANOVA_Circus)
+
+write.csv(pANOVA_summary, file = "../Tables/pANOVA_output_hinge.csv")
+
+```
+
+
+
+
+#Some checks for model performance
+
+```{r}
+
+#A pdf with model linearity, collinearity,and residual normality ; not reported, but just for pretty checks. Takes a long time so commented out
+
+# pdf(file = "../Figures/performance_plots_hinge.pdf", height = 10, width = 8, onefile = TRUE)
+# 
+# perf_optLSA
+# perf_EndoLSA
+# 
+# perf_orbD
+# perf_optF
+# 
+# perf_OrbD_Occ_Hinge_mm_Elanus
+# perf_optF_Occ_Hinge_mm_Elanus
+# 
+# 
+# dev.off()
+
+
+
+normchecks <- c("lm_orbD","lm_optF","lm_optLSA","lm_EndoLSA","lm_orbD_Occ_Hinge_mm_Elanus",  "lm__optF_Occ_Hinge_mm_Elanus", "lm_optLSA_Occ_hinge_Circus")
+
+model_res_norm <- matrix(nrow = length(normchecks), ncol = 2)
+
+for (i in c(1: length(normchecks))){
+  
+  
+  temp <- check_normality(get(normchecks[i]))
+  
+  model_res_norm [i,1] <- paste (normchecks[i])
+  model_res_norm[i,2] <- round( temp[1], digits = 3)
+  
+  
+}
+
+
+
+
+PGLS_results <- cbind(PGLS_results_hinge, model_res_norm[c(1:nrow(PGLS_results_hinge)),2])
+
+
+write.csv(PGLS_results, file = "../Tables/PGLS_output_hinge.csv")
+
+```
+
+
+
+##############Plots- set up
+
+```{r, echo=TRUE}
+
+colsSpecies=c("red3","firebrick4", "indianred1", "forestgreen", "hotpink",  "blue", "darkblue","darkslateblue", "dark orange", "lightsalmon4", "wheat3","deepskyblue", "azure4", "skyblue", "cyan",   "blueviolet")
+
+#adding some plotting parameters that mean you can change them all at once for each subplot. You can also specify colours this way
+lwd_abline <- 2
+lwd_CI <- 2
+lty_CI <- 2
+col_CI <- "hotpink"
+
+names(colsSpecies)<- levels (as.factor(Av_data$GenSpec))
+pchPLOT=c(19,8,8, 17, 15)
+cexes = c(2,2.5,2.5,2,2)
+Av_data$desig <- rep(1,length(rownames(Av_data))); Av_data$desig[which(Av_data$species=="scriptus")] <- 2;
+Av_data$desig[which(Av_data$species=="axillaris")] <- 3;
+
+Av_data$desig[which(Av_data$species=="caeruleus")] <- 3
+
+
+
+Full_data$desig <- rep(1,length(rownames(Full_data)));
+Full_data$desig[c(which(Full_data$species=="scriptus"),which(Full_data$species=="axillaris"), which(Full_data$species == "caeruleus"))] <- 2
+Full_data$desig[which(Full_data$species=="subcristata")] <- 4;
+Full_data$desig[which(Full_data$species=="assimilis")] <- 5
+
+
+
+```
+
+
+#This is plotting the evomap CI intervals based confidence intervals. Note that I am using upper/lower 2.5% of the distribution (a total of 5% because we're looking at both tails).
+
+
+#Orbit/optic foramen plots. Really lazy in double-plotting but whatever ;-); saves me setting up a complicated line of plot just to prepare
+
+
+```{r}
+
+pdf("../Figures/Orbit_optic_hinge.pdf", height = 10, width = 5)
+
+par(mfrow=c(4,1), bty="n", mar = c(rep(4,4)))
+
+xlim1 <-  c(3.15,3.85)  
+ylim_orb_geo <- c(2.65,3.4)
+ylim_opt_geo <- c(0.8,1.5)
+ylim_opt_orb <- c(0.8,1.5)
+
+cexesOrbopt<-cexes-0.6
+
+#Orbit diameter against Occ_Hinge_mm
+plot(log (Full_data$orbD)~ log (Full_data$Occ_Hinge_mm),col=colsSpecies[Full_data$GenSpec], pch=pchPLOT[Full_data$desig], cex=cexesOrbopt[Full_data$desig], ylab="log Orbit Diameter (mm)", xlab="log Occ. Hinge (mm)", xlim=xlim1, ylim = ylim_orb_geo, bty="o")
+
+
+#Here we make the grey PI polygon. To make that appear behind the plot, I have to repeat the plot command. Not elegant but works!
+
+polygon(c(OrbD_gm_PI$PI.plot$X, rev (OrbD_gm_PI$PI.plot$X)), c(OrbD_gm_PI$PI.plot$Lower2.5, rev(OrbD_gm_PI$PI.plot$Upper2.5)), col = grey (0.9), border = NA )
+
+par(new=TRUE)
+
+plot(log (Full_data$orbD)~ log (Full_data$Occ_Hinge_mm),col=colsSpecies[Full_data$GenSpec], pch=pchPLOT[Full_data$desig], cex=cexesOrbopt[Full_data$desig], ylab="log Orbit Diameter (mm)", xlab="log Occ. Hinge (mm)", xlim=xlim1, ylim = ylim_orb_geo,bty="o");
+
+lines(OrbD_gm_CI$CI.plot$X,OrbD_gm_CI$CI.plot$Upper2.5,col= col_CI, lwd= lwd_CI, lty= lty_CI)
+  lines(OrbD_gm_CI$CI.plot$X,OrbD_gm_CI$CI.plot$Lower2.5, col= col_CI, lwd=lwd_CI, lty = lty_CI)
+
+  #I am here using the abline from the evomap code, but the pgls with brownian settings results in teh same line
+abline (OrbD_gm_CI$model[1,1], OrbD_gm_CI$model[2,1])
+
+mtext(text="A",side=1,line=-10,outer=FALSE, adj = 0.04,cex=0.7)
+
+#Optic foramen diameter against Occ_Hinge_mm
+plot(log (Full_data$optF)~ log (Full_data$Occ_Hinge_mm),col=colsSpecies[Full_data$GenSpec], pch=pchPLOT[Full_data$desig], cex=cexesOrbopt[Full_data$desig], ylab="log Optic Foramen Diameter (mm)", xlab="log Occ. Hinge (mm)",xlim=xlim1, ylim=ylim_opt_geo,bty="o");
+text((Full_data$optF)~(Full_data$Occ_Hinge_mm), labels='', adj=1, cex=0.7)
+
+
+polygon(c(OptF_gm_PI$PI.plot$X, rev (OptF_gm_PI$PI.plot$X)), c(OptF_gm_PI$PI.plot$Lower2.5, rev(OptF_gm_PI$PI.plot$Upper2.5)), col = grey (0.9), border = NA )
+
+par(new=TRUE)
+
+
+plot(log (Full_data$optF)~ log (Full_data$Occ_Hinge_mm),col=colsSpecies[Full_data$GenSpec], pch=pchPLOT[Full_data$desig], cex=cexesOrbopt[Full_data$desig], ylab="log Optic Foramen Diameter (mm)", xlab="log Occ. Hinge (mm)",xlim=xlim1, ylim=ylim_opt_geo,bty="o");
+text((Full_data$optF)~(Full_data$Occ_Hinge_mm), labels='', adj=1, cex=0.7)
+
+mtext(text="B",side=1,line=-10,outer=FALSE, adj = 0.04,cex=0.7)
+
+abline (OptF_gm_CI$model[1,1], OptF_gm_CI$model[2,1],lwd = lwd_abline)
+#The coefficients from the pgls are [1] intercept, [2] slope, and you can fit this to the graph like yay - there are cosmetics you can look up by typing ?abline.
+#abline( gls_optF$coefficients[1],gls_optF$coefficients[2], lwd = lwd_abline  )
+
+lines(OptF_gm_CI$CI.plot$X,OptF_gm_CI$CI.plot$Upper2.5,col= col_CI, lwd= lwd_CI, lty= lty_CI)
+lines(OptF_gm_CI$CI.plot$X,OptF_gm_CI$CI.plot$Lower2.5, col= col_CI, lwd=lwd_CI, lty = lty_CI)
+
+  
+     
+
+plot(1, type = "n",                         # Remove all elements of plot
+     xlim = c(0, 10), ylim = c(0, 10),
+     axes=F,
+     xlab=NA, ylab=NA
+     
+     )
+legend(-0.6,11 , levels(as.factor(Full_data$GenSpec)) , text.font = 3, pch= c(19,19,19,17,15,8,8,8,rep(19,8)), col=colsSpecies[levels(as.factor(Full_data$GenSpec))], cex=1.1, pt.cex=1.4, bty="n",ncol=3 )
+
+dev.off()
+  
+```
+
+#Endocast surface/size, optic lobe/size,
+
+```{r}
+
+pdf("../Figures/Surfaces_hinge.pdf", height = 10, width = 10)
+
+#The layout and legend plotting is inspired by code by Emma Sherratt :-) in Weisbecker et al. 2021.
+
+#This tells it to make 3 rows and (therefore 2 columns) with images 1-4 each occupying one position and image 5 occupying 2 positions. Thanks to Emma Sherratt for this trick
+mat <- matrix(c(1,2,3,3), nrow=2,byrow=T)
+
+# set the size of fields
+layout(mat, widths=c(1,1,0.5,0.5), heights=c(0.3,0.3,0.12))
+#Plot PC1 vs PC2
+par(mar=c(4, 5, 0.5, 1), cex.lab = 1.5, cex.axis =1.5)  # sets the margins c(bottom, left, top, right)
+
+
+
+  
+#Optic lobe against Occ_Hinge_mm
+plot(log(Full_data$optLSA)~log(Full_data$Occ_Hinge_mm),col=colsSpecies[Full_data$GenSpec], pch=pchPLOT[Full_data$desig], cex=cexes[Full_data$desig], ylab="log Av. Optic Lobe Surf. Area (mm2)", xlab=" log Occ. Hinge");
+
+
+#The coefficients from the pgls are [1] intercept, [2] slope, and you can fit this to the graph like yay - there are cosmetics you can look up by typing ?abline.
+abline( gls_optLSA$coefficients[1],gls_optLSA$coefficients[2], lwd = lwd_abline  )
+
+  lines(OptLSA_gm_CI$CI.plot$X,OptLSA_gm_CI$CI.plot$Upper2.5,col= col_CI, lwd= lwd_CI, lty= lty_CI)
+  lines(OptLSA_gm_CI$CI.plot$X,OptLSA_gm_CI$CI.plot$Lower2.5, col= col_CI, lwd=lwd_CI, lty = lty_CI)
+
+  mtext(text="A",side=1,line=-25,outer=FALSE, adj = 0.04, cex=0.9)
+
+  
+#Endocast surf. lobe against Occ_Hinge_mm
+plot(log (Full_data$BrSA_mmsquared) ~ log (Full_data$Occ_Hinge_mm),col=colsSpecies[Full_data$GenSpec], pch=pchPLOT[Full_data$desig], cex=cexes[Full_data$desig], ylab= "log Endoc. Surf. Area (mm2)", xlab="log Occ. Hinge");
+
+abline( gls_EndoLSA$coefficients[1],gls_EndoLSA$coefficients[2], lwd = lwd_abline  )
+
+  lines(EndoLSA_gm_CI$CI.plot$X,EndoLSA_gm_CI$CI.plot$Upper2.5,col= col_CI, lwd= lwd_CI, lty= lty_CI)
+  lines(EndoLSA_gm_CI$CI.plot$X,EndoLSA_gm_CI$CI.plot$Lower2.5, col= col_CI, lwd=lwd_CI, lty = lty_CI)
+  
+  mtext(text="B",side=1,line=-25,outer=FALSE, adj = 0.04, cex=0.9)
+
+  
+  #Make new empty plot for legend
+  
+  plot(1, type = "n",                         # Remove all elements of plot
+     xlim = c(0, 10), ylim = c(0, 10),
+     axes=F,
+     xlab=NA, ylab=NA
+     
+     )
+legend(0,10 , levels(as.factor(Full_data$GenSpec)) , text.font = 3, pch= c(19,19,19,17,15,8,8,8,rep(19,8)), col=colsSpecies[levels(as.factor(Full_data$GenSpec))], cex=1.5, pt.cex=2.1, bty="n",ncol=4, y.intersp = 1.2 )
+  
+dev.off()
+  
+```
+

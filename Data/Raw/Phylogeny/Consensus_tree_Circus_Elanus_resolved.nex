@@ -1,0 +1,4 @@
+#NEXUS
+begin trees;
+	tree UNTITLED = [&R] (((((((((Accipiter_fasciatus:1.0,Accipiter_novaehollandiae:1.0):1.0,Accipiter_cirrocephalus:2.0):1.0,Circus_assimilis:3.0):1.0,((Haliastur_sphenurus:1.0,Haliastur_indus:1.0):1.0,Milvus_migrans:2.0):2.0):1.0,Hieraaetus_morphnoides:5.0):1.0,Aviceda_subcristata:6.0):1.0,((Elanus_axillaris:1.0,Elanus_scriptus:1.0):1.0,Elanus_caeruleus:2.0):5.0):1.0,Pandion_haliaetus:8.0):1.0,((Falco_longipennis:1.0,Falco_subniger:1.0):1.0,Falco_cenchroides:2.0):7.0);
+end;

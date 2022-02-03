@@ -1,0 +1,155 @@
+---
+title: "LWK_Create_Data_files"
+author: "Vera Weisbecker and Aubrey Keirnan"
+date: "08/12/2020"
+output: html_document
+---
+
+#load phylogenetic packages
+
+```{r}
+
+library(ape)
+library(geiger)
+library(nlme)
+
+library(rstudioapi)
+
+#this sets the working directory to the home path, which doesn't happen on everyone's computers
+setwd(dirname(getActiveDocumentContext()$path))
+
+
+```
+
+#Reading and processing raw data
+
+```{r}
+#Read data
+Data_raw <- read.csv(file="../Data/Raw/Raptor_Data_Full.csv", header=TRUE)
+#Give each specimen its number to get unique row names
+rownames(Data_raw) <- c(paste(substr(Data_raw$Genus,1,1),substr(Data_raw$species,1,4), "_", Data_raw$Museum, Data_raw$Catalogue_number ,sep = ""))
+
+#This is the only case where there are 2 NAs (in M. sphenurus and A. subcristata). In these 2 cases, entering the value just for the left:
+colSums(is.na(Data_raw))
+
+Data_raw$OptFD_L_mm[which(is.na(Data_raw$OptFD_L_mm)==TRUE)] <- Data_raw$OptFD_R_mm[which(is.na(Data_raw$OptFD_L_mm)==TRUE)]
+
+colSums(is.na(Data_raw))
+
+#averaging lefts and rights - note na not required to be considered because dataset has both sides in all cases. Note the Wulst data are the sum of both areas from the outset (no left and right).
+optLSA <- rowMeans(data.frame(Data_raw$OptLSA_R_mmsquared,Data_raw$OptLSA_L_mmsquared)[,1:2])
+optF <- rowMeans(data.frame(Data_raw$OptFD_R_mm,Data_raw$OptFD_L_mm)[,1:2])
+orbD <- rowMeans(data.frame(Data_raw$OrbitD_R_mm,Data_raw$OrbitD_L_mm)[,1:2])
+orbPS <- rowMeans(data.frame(Data_raw$OrbPS_R_Degrees,Data_raw$OrbPS_L_Degrees)[,1:2])
+
+data_lr <- cbind(Data_raw, optLSA, optF, orbD, orbPS)
+
+
+```
+
+#Adding geometric mean as size proxy and putting together in an ordered fashion
+
+```{r, echo=TRUE}
+
+#Specimen provenance
+Specimen_provenance_data <- Data_raw[,c(1:5)]
+
+#Data that might be allometric
+Size_containing_data <- cbind (Data_raw[,c(6:16,25:27)], optLSA, optF, orbD, orbPS)
+
+#getting the geomean only from the data without left and right averaged. Making it into a column. Also only including linear measurements, not surface and volumes because they likely change between species according to different scales
+
+
+geomean <- apply(Size_containing_data[,c(4,8:14)], 1, prod)^(1/ncol(Size_containing_data[,c(4,8:14)]))
+
+#Data of degrees; these are limited to 360 degrees and not expected to be related to size 
+Degrees_data <- Data_raw[ ,c(17:24)]
+
+#Data that contain other factors and are non-numeric
+
+Factorial_data <- Data_raw[ ,c(28:32)]
+
+
+#A full dataset with all the different data types one after the other
+Full_data <- cbind(Specimen_provenance_data, Size_containing_data, geomean,Degrees_data,Factorial_data)
+rownames(Full_data) <- rownames(Data_raw)
+
+Full_data$GenSpec <- paste(substr( Full_data$Genus, start=1, stop=1), ". ", Full_data$species, sep="")
+
+```
+
+
+#Averaging species
+```{r}
+#averaging species 
+#data_av <- cbind (aggregate(Full_data_plus_resids[,c(6:29)], by = list(Full_data_plus_resids$species), FUN = mean), aggregate(Full_data_plus_resids[, c (2:4, 46, 48, 49)], by = list(Full_data_plus_resids$species), FUN = unique))
+
+
+Av_data <- cbind (aggregate((Full_data[,c(8:32)]), by = list(Full_data$species), FUN = mean), aggregate(Full_data[, c (1:3, 33,  36,37)], by = list(Full_data$species), FUN = unique))
+
+#We don't want the new Group.1 column. No idea where taht comes from or the purpose!
+Av_data <- Av_data [,-which (colnames(Av_data)=="Group.1",),]
+
+#the row names of this should be full names so they can be matched with the tree - but here we make an abbreviation for plotting
+Av_data$Abbreviation <- c(paste(substr(Av_data$Genus,1,1),substr(Av_data$species,1,4), sep = ""))
+
+#row names
+row.names(Av_data) <-c(paste(Av_data$Genus, Av_data$species, sep="_"))
+
+
+head(Av_data)
+
+Av_data$GenSpec <- paste(substr( Av_data$Genus, start=1, stop=1), ". ", Av_data$species, sep="")
+
+#VW conducted quick visual spot check in 3 random positions with original dataset that all is properly averaged. Can't be too careful! All good.
+
+```
+
+#load and create phylogeny - hashed out because not used again
+
+```{r}
+
+#Getting the tree from tree_pruner 
+# 
+ Trees <- read.nexus("../Data/Raw/Phylogeny/tree-pruner-fbbae0fa-904c-4174-b7e3-b81f992e8264/output.nex")
+# 
+# #Creating majority consensus tree
+# 
+ Interim_constree_95 <- consensus(Trees, p=0.95)
+ 
+ #Using the below consensus tree because it resolves Elanus better and in keeping with other phylogenies
+ Interim_constree_50 <- consensus(Trees, p=0.50)
+# 
+# write.nexus(Interim_constree, file = "../Data/Raw/Phylogeny/Consensus_tree.nex")
+```
+
+#This file is then manually changed in Mesquite so that _Circus_ is outside of _Accipiter and _E. caeruleus_ is outside the other two Elanus (following a combinaiton of Minden et al. 2018 and Starikove and Wink 2020 ) NOTE also I made this tree ultrametric. This means we only look at the topology, not divergence times. This is necessary because the Circus and Elanus positions have no time on it due to the manual rearrangement. 
+
+```{r}
+
+consensus_tree <- compute.brlen( read.nexus("../Data/Raw/Phylogeny/Consensus_tree_Circus_Elanus_resolved.nex"))
+
+plot(consensus_tree)
+
+name.check(consensus_tree, Av_data)
+
+#Reorder the average dataset so the row names match up 
+
+Av_data  <- Av_data[match( consensus_tree$tip.label, rownames(Av_data)),]
+
+Av_data$Species <- rownames(Av_data)
+
+#Check that this is correct
+
+rownames(Av_data) == consensus_tree$tip.label
+
+```
+
+
+#Save everything as an rdata file so there's no need to call everything singly
+```{r}
+
+save(Data_raw,Full_data,Av_data, consensus_tree, file = "../Data/Processed/LWK_data_processed.rda")
+
+
+```
