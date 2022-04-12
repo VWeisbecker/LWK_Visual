@@ -739,7 +739,32 @@ dev.off()
   
 ```
 
+#Orbit posterior angle single graph
+```{r}
+pdf("../Figures/Orbit_Posterior_Angle_AllSpecies.pdf")
+par(mfrow=c(1,1.5), bty="O")
 
+
+a <- rep(1, nrow(Full_data))
+
+
+
+plot(0:50,0:50, xlim=c(0.5,2),ylim=c(35,85), type="n", xaxt="n",
+     xlab = "",
+     ylab = "Degrees"  )
+
+axis(1, at=c(1), labels=c("Orbit Posterior Angle"));
+
+points(y=Full_data$OrbP_Degrees, x=(a),col=colsSpecies[Full_data$GenSpec], cex = cexes[Full_data$desig]-0.1, pch=pchPLOT[Full_data$desig]);
+
+
+legend(1.5,70 , levels(as.factor(Full_data$GenSpec)) , pch= c(19,19,19,17,15,8,8,8,rep(19,8)), col=colsSpecies[levels(as.factor(Full_data$GenSpec))], cex=1, bty="n", pt.cex=1.5 , text.font = 3)
+
+dev.off()
+
+```
+
+###This graph was removed from the manuscript and replaced with the graph above. It included data which added confusion and was irrelevant, thus it was taken out but is still included below.
 #Multiple degree measures on one graph - Note that the legend is shoddily coded right now but that's just more convenient for now.
 ```{r}
 pdf("../Figures/Orbit_Angle_AllSpecies.pdf")
