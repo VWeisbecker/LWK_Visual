@@ -214,25 +214,25 @@ Wulst_Endo_CI <- gls.ci(log(Av_data$Wulst_mmsquared),log( Av_data$BrSA_mmsquared
 
 #Set up a table with the relevant column names
 
-PGLS_results <- data.frame("Dep" = integer(0), "Pred"= integer(0), "t"= integer(0), "p"= integer(0))
+PGLS_results <- data.frame("Dep" = integer(0), "Pred"= integer(0),"Slope"=integer(0), "t"= integer(0), "p"= integer(0))
 
 #Start it off with row 1 
 
-PGLS_results [1,] <-   c( "log Orb. Diam.", "log Geom. Mean", round (summary(gls_orbD)$tTable[2,3:4],3))
+PGLS_results [1,] <-   c( "log Orb. Diam.", "log Geom. Mean", round (summary(gls_orbD)$tTable[2,c(1,3,4)],3))
 
-PGLS_results <-rbind (PGLS_results, c( "log Opt. For.", "log Geom. Mean",  round (summary(gls_optF)$tTable[2,3:4],3)))
+PGLS_results <-rbind (PGLS_results, c( "log Opt. For.", "log Geom. Mean",  round (summary(gls_optF)$tTable[2,c(1,3,4)],3)))
 
-PGLS_results<-  rbind (PGLS_results, c("log Opt. For.", "log Orb. Diam.",round(summary(gls_optF_orbD)$tTable[2,3:4],3)))
+PGLS_results<-  rbind (PGLS_results, c("log Opt. For.", "log Orb. Diam.",round(summary(gls_optF_orbD)$tTable[2,c(1,3,4)],3)))
 
-PGLS_results <- rbind(PGLS_results, c("log Opt. L. Surf", "log Geom. Mean", round(summary(gls_optLSA)$tTable[2,3:4],3)))
+PGLS_results <- rbind(PGLS_results, c("log Opt. L. Surf", "log Geom. Mean", round(summary(gls_optLSA)$tTable[2,c(1,3,4)],3)))
 
 #Then add as many rows with the same outputs as you like using rbind
 
-PGLS_results <-rbind (PGLS_results, c("log Endoc. surf.", "log Geom. Mean", round (summary(gls_EndoLSA)$tTable[2,3:4],3)))
+PGLS_results <-rbind (PGLS_results, c("log Endoc. surf.", "log Geom. Mean", round (summary(gls_EndoLSA)$tTable[2,c(1,3,4)],3)))
 
-PGLS_results <- rbind (PGLS_results, c( "log Opt. L. Surf.","log Endoc. Surf.", round (summary(gls_optLSA_endo)$tTable[2,3:4],3)))
+PGLS_results <- rbind (PGLS_results, c( "log Opt. L. Surf.","log Endoc. Surf.", round (summary(gls_optLSA_endo)$tTable[2,c(1,3,4)],3)))
 
-PGLS_results <- rbind (PGLS_results, c("log Wulst Surf.", "log Endoc.-Wulst surf.", round(summary(gls_Wulst_Endo)$tTable[2,3:4],3)))
+PGLS_results <- rbind (PGLS_results, c("log Wulst Surf.", "log Endoc.-Wulst surf.", round(summary(gls_Wulst_Endo)$tTable[2,c(1,3,4)],3)))
 
 
 
