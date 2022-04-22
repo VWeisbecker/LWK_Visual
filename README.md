@@ -13,6 +13,7 @@ The paper to accompany this analysis is currently in review.
 * [Consensus_tree_Circus_Elanus_resolved.nex](Data/Raw/Phylogeny/Consensus_tree_Circus_Elanus_resolved.nex) 50% consensus tree from Birdtree, with additional resolution of _Circus_ as per [LWK_data_frames.Rmd](/Analysis/LWK_data_frames.Rmd)
 * [Facilities.txt](/Data/Raw/Facilities.txt) provides the full names of abbreviated CT scanning facilities used.
 * MorphoSource Project P918 will publically provide CT scans and 3D meshes of all specimens studied
+* [Data_header_legend.pdf](/Data/Raw/Data_header_legend.pdf) provides extended captions for each data column
     
  **Processed**
  
@@ -29,6 +30,6 @@ The paper to accompany this analysis is currently in review.
 
 Receives figure outputs from the code
 
-##Tables
+## Tables
 
 Receives table outputs from the code
