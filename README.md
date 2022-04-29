@@ -1,7 +1,11 @@
 # Not like night and day: the nocturnal Letter-winged Kite does not differ from diurnal congeners in orbit or endocast morphology - data and code
 Code authors: Vera Weisbecker, Jeroen Smaers, Aubrey Keirnan, Andrew Iwaniuk
 
-The paper to accompany this analysis is currently in review.
+Accompanies the publication: Aubrey Keirnan, Trevor H. Worthy, Jeroen Smaers, Karine Mardon, Andrew Iwaniuk, Vera Weisbecker (2022): Not like night and day: the nocturnal Letter-winged Kite does not differ from diurnal congeners in orbit or endocast morphology. Royal Society Open Science. 
+
+The release to go with the publication is on <a href="https://zenodo.org/badge/latestdoi/455048747"><img src="https://zenodo.org/badge/455048747.svg" alt="DOI"></a>
+
+
 
 *All scripts are in RMarkdown format (.Rmd) and can be opened in RStudio. There, you can edit and run code chunks as normal. After cloning this repo, remember to either set your working directory to the LWK_Visual folder on your computer or open an RStudio project from that folder.*
 
